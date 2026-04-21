@@ -1,0 +1,119 @@
+# =============================
+# 📁 Project: Sales ETL Pipeline
+# =============================
+
+# Folder Structure:
+# sales-etl-pipeline/
+# │── data/
+# │   ├── sales.csv
+# │── scripts/
+# │   ├── etl_pipeline.py
+# │── sql/
+# │   ├── create_tables.sql
+# │── requirements.txt
+# │── README.md
+
+
+# =============================
+# 📄 requirements.txt
+# =============================
+pandas
+sqlalchemy
+psycopg2-binary
+
+
+# =============================
+# 📄 scripts/etl_pipeline.py
+# =============================
+
+import pandas as pd
+from sqlalchemy import create_engine
+import logging
+
+# Logging setup
+logging.basicConfig(filename='etl.log', level=logging.INFO)
+
+# Database connection
+DB_URI = "postgresql://postgres:password@localhost:5432/sales_db"
+
+
+def extract():
+    try:
+        df = pd.read_csv('data/sales.csv')
+        logging.info("Data extracted successfully")
+        return df
+    except Exception as e:
+        logging.error(f"Extract failed: {e}")
+        raise
+
+
+def transform(df):
+    try:
+        df['order_date'] = pd.to_datetime(df['order_date'])
+        df['revenue'] = df['quantity'] * df['price']
+        df = df.dropna()
+        logging.info("Data transformed successfully")
+        return df
+    except Exception as e:
+        logging.error(f"Transform failed: {e}")
+        raise
+
+
+def load(df):
+    try:
+        engine = create_engine(DB_URI)
+        df.to_sql('sales_fact', engine, if_exists='replace', index=False)
+        logging.info("Data loaded successfully")
+    except Exception as e:
+        logging.error(f"Load failed: {e}")
+        raise
+
+
+def run_pipeline():
+    df = extract()
+    df = transform(df)
+    load(df)
+
+
+if __name__ == "__main__":
+    run_pipeline()
+
+
+# =============================
+# 📄 sql/create_tables.sql
+# =============================
+
+CREATE TABLE sales_fact (
+    order_id INT,
+    product_id INT,
+    quantity INT,
+    price FLOAT,
+    revenue FLOAT,
+    order_date DATE
+);
+
+
+# =============================
+# 📄 data/sales.csv (sample)
+# =============================
+
+# order_id,product_id,quantity,price,order_date
+# 1,101,2,500,2024-01-01
+# 2,102,1,300,2024-01-02
+# 3,103,5,200,2024-01-03
+
+
+# =============================
+# 📄 README.md
+# =============================
+
+"""
+# 🚀 Sales ETL Pipeline Project
+
+## 📌 Overview
+This project demonstrates an end-to-end ETL (Extract, Transform, Load) pipeline using Python and PostgreSQL.
+
+## 🧱 Architecture
+CSV → Python (Pandas) → PostgreSQL → BI Tool
+
+
